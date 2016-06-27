@@ -1,5 +1,5 @@
 FROM centos:7
-MAINTAINER Justin Wilson "j.w.winship@gmail.com"
+MAINTAINER Justin Wilson "sudo.justin.wilson@gmail.com"
 LABEL version=0.1
 LABEL asterisk_version=certified-11-LTS
 ENV REVISION 0.4
@@ -68,19 +68,19 @@ RUN source ~/.astersiskvars \
 # Install personal /etc/asterisk files:
 ADD asterisk-etc-configs.tgz /etc/asterisk/
 
-# assign asterisk as the default user (unless the ASTERISKUSER env var is set to something else):
+# assign "asterisk" as the default user (unless the ASTERISKUSER env var is set to something else):
 RUN  echo "export ASTERISKUSER=${ASTERISKUSER:-'asterisk'}" >> ~/.astersiskvars
 
+# by default, the password is "password". to change this, set the "ASTERISKUSER_PASSWORD" variable:
 RUN source ~/.astersiskvars \
         && useradd -UmG wheel $ASTERISKUSER \
         && echo ${ASTERISKUSER_PASSWORD:-'password'} | passwd --stdin $ASTERISKUSER \
         && chown -R "$ASTERISKUSER":"$ASTERISKUSER" {/var/lib,/var/spool,/var/log,/var/run}/asterisk \
         && chown -R "$ASTERISKUSER":"$ASTERISKUSER" /etc/asterisk
 
-# clean up
-RUN rm -f ~/.astersiskvars
-
 WORKDIR /etc/asterisk
 
 CMD su - asterisk \
 	&& /usr/sbin/asterisk
+# clean up
+RUN rm -f ~/.astersiskvars
