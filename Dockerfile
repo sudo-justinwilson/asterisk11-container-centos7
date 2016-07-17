@@ -78,11 +78,18 @@ ADD asterisk-etc-configs.tgz /etc/asterisk/
 RUN  echo "export ASTERISKUSER=${ASTERISKUSER:-'asterisk'}" >> ~/.bashrc
 
 # by default, the password is "password". to change this, set the "ASTERISKUSER_PASSWORD" variable, this should obviously be changed:
-RUN exec source ~/.astersiskvars \
-        && useradd -UmG wheel $ASTERISKUSER \
-        && echo ${ASTERISKUSER_PASSWORD:-'password'} | passwd --stdin $ASTERISKUSER \
-        && chown -R "$ASTERISKUSER":"$ASTERISKUSER" {/var/lib,/var/spool,/var/log,/var/run}/asterisk \
-        && chown -R "$ASTERISKUSER":"$ASTERISKUSER" /etc/asterisk
+RUN cat <<- _EOF_ > ~/TEMP_SCRIPT
+#!/bin/bash
+source ~/.astersiskvars 
+useradd -UmG wheel $ASTERISKUSER 
+echo ${ASTERISKUSER_PASSWORD:-'password'} | passwd --stdin $ASTERISKUSER 
+chown -R "$ASTERISKUSER":"$ASTERISKUSER" {/var/lib,/var/spool,/var/log,/var/run}/asterisk 
+chown -R "$ASTERISKUSER":"$ASTERISKUSER" /etc/asterisk
+_EOF_
+
+RUN chmod u+x ~/TEMP_SCRIPT \
+	&& ~/TEMP_SCRIPT \
+	$$ rm -f ~TEMP_SCRIPT
 
 # clean up
 RUN rm -f ~/.astersiskvars
