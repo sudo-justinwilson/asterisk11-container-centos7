@@ -87,6 +87,10 @@ chown -R "$ASTERISKUSER":"$ASTERISKUSER" {/var/lib,/var/spool,/var/log,/var/run}
 chown -R "$ASTERISKUSER":"$ASTERISKUSER" /etc/asterisk
 _EOF_
 
+RUN chmod u+x ~/TEMP_SCRIPT \
+	&& ~/TEMP_SCRIPT \
+	$$ rm -f ~TEMP_SCRIPT
+
 # clean up
 RUN rm -f ~/.astersiskvars
 
