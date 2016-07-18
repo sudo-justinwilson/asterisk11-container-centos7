@@ -1,6 +1,6 @@
 FROM centos:7
 MAINTAINER Justin Wilson "sudo.justin.wilson@gmail.com"
-LABEL version=0.1
+LABEL version=0.9
 LABEL asterisk_version=certified-11-LTS
 ENV REVISION 0.4
 
@@ -60,43 +60,27 @@ RUN source ~/.astersiskvars \
 RUN source ~/.astersiskvars \
 	&& cd $ASTERISK_SOURCEDIR \
 	&& make menuselect.makeopts \
-	&& menuselect/menuselect \
-	--enable chan_sip \
-	--enable CORE-SOUNDS-EN_AU-WAV \
-	--enable CORE-SOUNDS-EN_AU-ULAW \
-	--enable CORE-SOUNDS-EN_AU-ALAW \
-	--enable CORE-SOUNDS-EN_AU-GSM \
-	-- enable CORE-SOUNDS-EN_AU-G729 \
-	--enable CORE-SOUNDS-EN_AU-G722 menuselect.makeopts \
+	&& menuselect/menuselect --enable chan_sip --enable CORE-SOUNDS-EN_AU-WAV --enable CORE-SOUNDS-EN_AU-ULAW --enable CORE-SOUNDS-EN_AU-ALAW --enable CORE-SOUNDS-EN_AU-GSM - enable CORE-SOUNDS-EN_AU-G729 --enable CORE-SOUNDS-EN_AU-G722 menuselect.makeopts \
 	&& make \
 	&& make install 
 
 # if you want to add existing /etc/asterisk/*.conf files, tar them and put them in the build context named "asterisk-etc-configs.tgz", or change the following value:
+# Install personal /etc/asterisk files:
 ADD asterisk-etc-configs.tgz /etc/asterisk/
 
-# assign "asterisk" as the default user (unless the ASTERISKUSER env var is set to something else. IE: setting an explicit variable with "docker run -e"..):
-RUN  echo "export ASTERISKUSER=${ASTERISKUSER:-'asterisk'}" >> ~/.bashrc
+# assign asterisk as the default user (unless the ASTERISKUSER env var is set to something else):
+RUN  echo "export ASTERISKUSER=${ASTERISKUSER:-'asterisk'}" >> ~/.astersiskvars
 
-# by default, the password is "password". to change this, set the "ASTERISKUSER_PASSWORD" variable, this should obviously be changed:
-RUN cat <<- _EOF_ > ~/TEMP_SCRIPT
-#!/bin/bash
-source ~/.astersiskvars 
-useradd -UmG wheel $ASTERISKUSER 
-echo ${ASTERISKUSER_PASSWORD:-'password'} | passwd --stdin $ASTERISKUSER 
-chown -R "$ASTERISKUSER":"$ASTERISKUSER" {/var/lib,/var/spool,/var/log,/var/run}/asterisk 
-chown -R "$ASTERISKUSER":"$ASTERISKUSER" /etc/asterisk
-_EOF_
-
-RUN chmod u+x ~/TEMP_SCRIPT \
-	&& ~/TEMP_SCRIPT \
-	$$ rm -f ~TEMP_SCRIPT
+RUN source ~/.astersiskvars \
+        && useradd -UmG wheel $ASTERISKUSER \
+        && echo ${ASTERISKUSER_PASSWORD:-'password'} | passwd --stdin $ASTERISKUSER \
+        && chown -R "$ASTERISKUSER":"$ASTERISKUSER" {/var/lib,/var/spool,/var/log,/var/run}/asterisk \
+        && chown -R "$ASTERISKUSER":"$ASTERISKUSER" /etc/asterisk
 
 # clean up
 RUN rm -f ~/.astersiskvars
 
-# when launched, you will be $ASTERISKUSER@/etc/asterisk/
 WORKDIR /etc/asterisk
 
-CMD source ~/.bashrc \
-	&& su - $ASTERISKUSER \
+CMD su - asterisk \
 	&& /usr/sbin/asterisk
